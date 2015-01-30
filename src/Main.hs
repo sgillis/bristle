@@ -1,47 +1,47 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 
-import Text.ParserCombinators.Parsec
-import Control.Applicative hiding ((<|>), many)
-import System.Environment
+import Data.Char
+import GHC.Generics
+import Text.Parsec (parse)
+import Text.Bristle
+import Text.Bristle.Context
+import Text.Bristle.Types
 
-data TmplPart = Literal String
-              | Variable String
-              deriving Show
+data Name = Name
+    { name :: String } deriving Generic
 
-type Template = [TmplPart]
+instance ContextGenerator Name
 
-specialCharacters :: String
-specialCharacters = "{}"
+data Rec = Rec
+    { world   :: String
+    , shout   :: String -> String
+    , n       :: Int
+    , blabber :: Bool
+    , names   :: [Name]
+    } deriving Generic
 
-variable :: Parser String
-variable = between (string "{{" <* spaces) (string "}}")
-                   (many1 $ noneOf specialCharacters <* spaces)
-
-parseTmplPart :: Parser TmplPart
-parseTmplPart = Literal <$> (many1 $ noneOf specialCharacters)
-         <|> Variable <$> variable
-
-parseTemplate :: Parser Template
-parseTemplate = many parseTmplPart
-
-toLiteral :: TmplPart -> IO TmplPart
-toLiteral (Variable s) = do
-    mval <- lookupEnv s
-    case mval of
-         Just val -> return $ Literal val
-         Nothing -> return $ Literal ""
-toLiteral x = return x
-
-toString :: TmplPart -> IO String
-toString p = do
-    Literal s <- toLiteral p
-    return s
+instance ContextGenerator Rec
 
 main :: IO ()
 main = do
-    let parsedTmpl = parse parseTemplate "" "Hello {{ name }}"
-    case parsedTmpl of
+    let em = parse parseMustache "" $ concat
+            [ "{{#shout}}hello {{world}}{{/shout}}\n"
+            , "You're number {{n}}!\n"
+            , "{{#blabber}}"
+            , "Don't start blabbering\n"
+            , "{{/blabber}}"
+            , "{{#names}}{{name}},\n{{/names}}"
+            ]
+        rec = Rec "Europe" (map toUpper) 1 False
+                  [Name "me", Name "myself", Name "I"]
+    case em of
          Left e -> print e
-         Right tmpl -> do
-            filledTmpl <- mapM toString tmpl
-            print $ concat filledTmpl
+         Right m -> putStr $ evaluateTemplate rec m
+
+{- Output:
+HELLO EUROPE
+You're number 1!
+me,
+myself,
+I,
+-}
