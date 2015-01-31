@@ -18,6 +18,10 @@ combineContext c c' = \s -> case clookup c s of
 defaultContext :: Context
 defaultContext = \_ -> Nothing
 
+mkContext :: String -> ContextNode -> Context
+mkContext s n = \case s -> Just n
+                      _ -> Nothing
+
 {-| Evaluate |-}
 empty :: String
 empty = ""

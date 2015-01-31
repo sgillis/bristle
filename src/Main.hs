@@ -38,7 +38,7 @@ main = do
         ctx = (Rec "Europe" (map toUpper) 1 False
                    [Name "me", Name "myself", Name "I"]
                    (SubContext (Tickets 2 "Gojira")))
-              <++> (\case "friends" -> Just $ ContextList [])
+              <++> (mkContext "friends" (ContextList []))
               <++> defaultContext
     case em of
          Left e -> print e
