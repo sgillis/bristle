@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 
 import Data.Char
 import GHC.Generics
@@ -26,7 +27,6 @@ data Rec = Rec
     , blabber :: Bool
     , names   :: [Name]
     , tickets :: SubContext Tickets
-    , friends :: [Name]
     } deriving Generic
 
 instance ContextGenerator Rec
@@ -37,8 +37,9 @@ main = do
     let em  = parse parseMustache "" template
         ctx = (Rec "Europe" (map toUpper) 1 False
                    [Name "me", Name "myself", Name "I"]
-                   (SubContext (Tickets 2 "Gojira"))
-                   []) <++> defaultContext
+                   (SubContext (Tickets 2 "Gojira")))
+              <++> (\case "friends" -> Just $ ContextList [])
+              <++> defaultContext
     case em of
          Left e -> print e
          Right m -> putStr $ evaluateTemplate ctx m
