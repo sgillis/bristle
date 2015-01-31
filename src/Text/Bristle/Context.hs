@@ -25,7 +25,8 @@ evaluateNode c MustacheComment = empty
 evaluateNode c (MustacheSection s m) =
     case clookup c s of
          Just (ContextLambda f) -> f $ evaluateTemplate c m
-         Just (ContextBool b) -> if b then evaluateTemplate c m else empty
-         Just (ContextList []) -> empty
-         Just (ContextList xs) -> concat $ map (flip evaluateTemplate m) xs
-         _ -> evaluateTemplate c m
+         Just (ContextBool b)   -> if b then evaluateTemplate c m else empty
+         Just (ContextList [])  -> empty
+         Just (ContextList xs)  -> concat $ map (flip evaluateTemplate m) xs
+         Just (ContextSub sc)   -> evaluateTemplate sc m
+         _                      -> evaluateTemplate c m

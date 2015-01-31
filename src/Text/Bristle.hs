@@ -76,8 +76,12 @@ mustache f = between (string "{{") (string "}}") f
 prefixSection :: Char -> Parser (String, Mustache)
 prefixSection prefix = do
     sectionName <- mustache $ char prefix >> key
+    n           <- optionMaybe newline
     mustache    <- manyTill parseMustacheNode $ lookAhead $ try $ sectionEnd sectionName
     _           <- sectionEnd sectionName
+    case n of
+         Just _ -> newline >> return ()
+         Nothing   -> return ()
     return (sectionName, mustache)
       where sectionEnd name = mustache $ char '/' >> string name
 

@@ -13,7 +13,6 @@ module Text.Bristle.Types where
 import Prelude hiding (lookup)
 import GHC.Generics
 import Data.Typeable
-import Data.HashMap.Lazy hiding (map)
 
 type Mustache = [MustacheNode]
 type Escape = Bool
@@ -30,11 +29,9 @@ data ContextNode = ContextText String
                  | ContextLambda (String -> String)
                  | ContextBool Bool
                  | ContextList [String -> Maybe ContextNode]
+                 | ContextSub (String -> Maybe ContextNode)
 
-type Map = HashMap String ContextNode
-
-instance ContextGenerator Map where
-    clookup = flip lookup
+data SubContext c = SubContext { getContext :: c }
 
 instance ContextGenerator (String -> Maybe ContextNode) where
     clookup a s = a s
@@ -93,3 +90,6 @@ instance (Show c) => GContext (K1 i c) where
 
 instance (ContextGenerator c) => GContext (K1 i [c]) where
     gcontext (K1 xs) = ContextList $ map clookup xs
+
+instance (ContextGenerator c) => GContext (K1 i (SubContext c)) where
+    gcontext (K1 x) = ContextSub $ clookup $ getContext x
