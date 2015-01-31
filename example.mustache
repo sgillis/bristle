@@ -9,3 +9,9 @@ My name is {{name}},
 {{#tickets}}
 I would like to order {{amount}} tickets for {{concert}}.
 {{/tickets}}
+{{#friends}}
+ * {{name}}
+{{/friends}}
+{{^friends}}
+I have no friends :(
+{{/friends}}

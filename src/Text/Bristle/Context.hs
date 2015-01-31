@@ -44,3 +44,9 @@ evaluateNode c (MustacheSection s m) =
          Just (ContextList xs)  -> concat $ map (flip evaluateTemplate m) xs
          Just (ContextSub sc)   -> evaluateTemplate sc m
          _                      -> evaluateTemplate c m
+
+evaluateNode c (MustacheSectionInv s m) =
+    case clookup c s of
+         Just (ContextBool b)   -> if b then empty else evaluateTemplate c m
+         Just (ContextList [])  -> evaluateTemplate c m
+         _                      -> empty

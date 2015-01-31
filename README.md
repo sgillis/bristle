@@ -7,7 +7,7 @@ Todo
 ----
  - [x] Subcontexts
  - [ ] Constructor names as keys
- - [ ] Inverse sections
+ - [x] Inverse sections
  - [ ] API context
  - [ ] Testing
  - [ ] Partials
