@@ -33,10 +33,10 @@ instance ContextGenerator Rec
 main :: IO ()
 main = do
     template <- readFile "example.mustache"
-    let em = parse parseMustache "" template
-        rec = Rec "Europe" (map toUpper) 1 False
-                  [Name "me", Name "myself", Name "I"]
-                  (SubContext (Tickets 2 "Gojira"))
+    let em  = parse parseMustache "" template
+        ctx = (Rec "Europe" (map toUpper) 1 False
+                   [Name "me", Name "myself", Name "I"]
+                   (SubContext (Tickets 2 "Gojira"))) <++> defaultContext
     case em of
          Left e -> print e
-         Right m -> putStr $ evaluateTemplate rec m
+         Right m -> putStr $ evaluateTemplate ctx m

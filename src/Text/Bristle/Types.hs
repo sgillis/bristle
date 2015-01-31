@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE OverlappingInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Text.Bristle.Types where
 
@@ -31,10 +32,18 @@ data ContextNode = ContextText String
                  | ContextList [String -> Maybe ContextNode]
                  | ContextSub (String -> Maybe ContextNode)
 
-data SubContext c = SubContext { getContext :: c }
+newtype SubContext c = SubContext { getContext :: c }
 
-instance ContextGenerator (String -> Maybe ContextNode) where
+type Context = (String -> Maybe ContextNode)
+
+instance ContextGenerator Context where
     clookup a s = a s
+
+instance (ContextGenerator a) => ContextGenerator [a] where
+    clookup [] s = Nothing
+    clookup (a:as) s = case clookup a s of
+                            Nothing -> clookup as s
+                            ma      -> ma
 
 {-| ContextGenerator |-}
 class ContextGenerator a where

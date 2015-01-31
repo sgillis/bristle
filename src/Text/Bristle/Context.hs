@@ -1,13 +1,27 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Text.Bristle.Context where
 
 import Prelude hiding (lookup)
 import System.Environment
 import Text.Bristle.Types
 
+combineContext :: (ContextGenerator a, ContextGenerator b)
+               => a -> b -> Context
+combineContext c c' = \s -> case clookup c s of
+                                 Nothing -> clookup c' s
+                                 ma      -> ma
+
+(<++>) :: (ContextGenerator a, ContextGenerator b) => a -> b -> Context
+(<++>) = combineContext
+
+defaultContext :: Context
+defaultContext = \_ -> Nothing
+
+{-| Evaluate |-}
 empty :: String
 empty = ""
 
-{-| Evaluate |-}
 evaluateTemplate :: ContextGenerator a => a -> Mustache -> String
 evaluateTemplate c mu =
     concat $ map (evaluateNode c) mu
