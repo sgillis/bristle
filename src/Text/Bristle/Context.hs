@@ -1,8 +1,11 @@
 module Text.Bristle.Context where
 
 import Prelude hiding (lookup)
+import Control.Monad
 import System.Environment
+import Text.Parsec
 import Text.Bristle.Types
+import Text.Bristle
 
 combineContext :: (ContextGenerator a, ContextGenerator b)
                => a -> b -> Context
@@ -23,31 +26,39 @@ mkContext s n = \s' -> if s' == s then Just n else Nothing
 empty :: String
 empty = ""
 
-evaluateTemplate :: ContextGenerator a => a -> Mustache -> String
-evaluateTemplate c mu =
-    concat $ map (evaluateNode c) mu
+evaluateTemplate :: ContextGenerator a => a -> Mustache -> IO String
+evaluateTemplate c mu = do
+    mapM (evaluateNode c) mu >>= return . concat
 
-evaluateNode :: ContextGenerator a => a -> MustacheNode -> String
-evaluateNode c (MustacheText s) = s
+evaluateNode :: ContextGenerator a => a -> MustacheNode -> IO String
+evaluateNode c (MustacheText s) = return s
 
 evaluateNode c (MustacheVar escape s) =
-    case clookup c s of
-         Just (ContextText s) -> s
-         _                    -> empty
+    return $ case clookup c s of
+                  Just (ContextText s) -> s
+                  _                    -> empty
 
-evaluateNode c MustacheComment = empty
+evaluateNode c MustacheComment = return empty
 
 evaluateNode c (MustacheSection s m) =
     case clookup c s of
-         Just (ContextLambda f) -> f $ evaluateTemplate c m
-         Just (ContextBool b)   -> if b then evaluateTemplate c m else empty
-         Just (ContextList [])  -> empty
-         Just (ContextList xs)  -> concat $ map (flip evaluateTemplate m) xs
+         Just (ContextLambda f) -> evaluateTemplate c m >>= return . f
+         Just (ContextBool b)   -> if b then evaluateTemplate c m else return empty
+         Just (ContextList [])  -> return empty
+         Just (ContextList xs)  -> mapM (flip evaluateTemplate m) xs >>=
+                                   return . concat
          Just (ContextSub sc)   -> evaluateTemplate sc m
          _                      -> evaluateTemplate c m
 
 evaluateNode c (MustacheSectionInv s m) =
     case clookup c s of
-         Just (ContextBool b)   -> if b then empty else evaluateTemplate c m
+         Just (ContextBool b)   -> if b then return empty else evaluateTemplate c m
          Just (ContextList [])  -> evaluateTemplate c m
-         _                      -> empty
+         _                      -> return empty
+
+evaluateNode c (MustachePartial s) = do
+    partialMustache <- readFile (s ++ ".mustache")
+    let em = parse parseMustache "" partialMustache
+    case em of
+         Left e -> return $ show e
+         Right m -> evaluateTemplate c m

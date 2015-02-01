@@ -48,4 +48,4 @@ main = do
               <++> defaultContext
     case em of
          Left e -> print e
-         Right m -> putStr $ evaluateTemplate ctx m
+         Right m -> evaluateTemplate ctx m >>= putStr

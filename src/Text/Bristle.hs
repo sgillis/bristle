@@ -49,7 +49,8 @@ parseMustacheNode =
     <|> try ampVar
     <|> try var
     <|> try text
-      where partial = MustachePartial <$> (mustache $ string "> " >> key)
+      where partial = MustachePartial <$>
+                (mustache $ string "> " >> key) >>= stripNewline
             section = prefixSection '#' >>= \(name, mustache) ->
               return $ MustacheSection name mustache
             invSection = prefixSection '^' >>= \(name, mustache) ->
@@ -90,3 +91,6 @@ many1Till f end = do
     x  <- f
     xs <- manyTill f end
     return (x:xs)
+
+stripNewline :: a -> Parser a
+stripNewline x = optional newline >> return x

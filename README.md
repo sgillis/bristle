@@ -14,5 +14,5 @@ Todo
  - [ ] Escaping
  - [ ] List item by index
  - [ ] Custom queries and field renaming
- - [ ] Partials
+ - [x] Partials
  - [x] Constructor names as keys
