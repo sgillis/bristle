@@ -29,8 +29,8 @@ data MustacheNode = MustacheText String
 data ContextNode = ContextText String
                  | ContextLambda (String -> String)
                  | ContextBool Bool
-                 | ContextList [String -> Maybe ContextNode]
-                 | ContextSub (String -> Maybe ContextNode)
+                 | ContextList [Context]
+                 | ContextSub Context
 
 newtype SubContext c = SubContext { getContext :: c }
 
@@ -57,7 +57,7 @@ class GContextGenerator f where
     glookup :: f a -> String -> Maybe ContextNode
 
 instance (GContext f, Selector c) => GContextGenerator (S1 c f) where
-    glookup m@(M1 x) s | selName m == s = Just $  gcontext x
+    glookup m@(M1 x) s | selName m == s = Just $ gcontext x
                        | otherwise      = Nothing
 
 instance (GContextGenerator f) => GContextGenerator (D1 c f) where
@@ -72,14 +72,20 @@ instance ContextGenerator a => GContextGenerator (K1 i a) where
 instance GContextGenerator U1 where
     glookup _ _ = Nothing
 
-instance (GContextGenerator f, GContextGenerator g) => GContextGenerator (f :*: g) where
+instance (GContextGenerator f, GContextGenerator g)
+         => GContextGenerator (f :*: g) where
     glookup (x :*: y) s = case glookup x s of
                                Nothing -> glookup y s
                                ms -> ms
 
-instance (GContextGenerator f, GContextGenerator g) => GContextGenerator (f :+: g) where
-    glookup (L1 x) s = glookup x s
-    glookup (R1 y) s = glookup y s
+instance (GName f, GName g, GContextGenerator f, GContextGenerator g)
+         => GContextGenerator (f :+: g) where
+    glookup (L1 x) s = case gname x == s of
+                              True -> Just $ ContextSub $ glookup x
+                              False -> Nothing
+    glookup (R1 y) s = case gname y == s of
+                              True -> Just $ ContextSub $ glookup y
+                              False -> Nothing
 
 {-| GContext |-}
 class GContext f where
@@ -102,3 +108,10 @@ instance (ContextGenerator c) => GContext (K1 i [c]) where
 
 instance (ContextGenerator c) => GContext (K1 i (SubContext c)) where
     gcontext (K1 x) = ContextSub $ clookup $ getContext x
+
+{-| GName |-}
+class GName f where
+    gname :: f a -> String
+
+instance (Constructor c) => GName (M1 C c f) where
+    gname = conName

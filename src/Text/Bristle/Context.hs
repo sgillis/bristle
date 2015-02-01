@@ -1,5 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Text.Bristle.Context where
 
 import Prelude hiding (lookup)
@@ -19,8 +17,7 @@ defaultContext :: Context
 defaultContext = \_ -> Nothing
 
 mkContext :: String -> ContextNode -> Context
-mkContext s n = \case s -> Just n
-                      _ -> Nothing
+mkContext s n = \s' -> if s' == s then Just n else Nothing
 
 {-| Evaluate |-}
 empty :: String

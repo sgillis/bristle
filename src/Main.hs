@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE LambdaCase #-}
 
 import Data.Char
 import GHC.Generics
@@ -31,6 +30,12 @@ data Rec = Rec
 
 instance ContextGenerator Rec
 
+data Hero = SuperHero { heroName :: String }
+          | EvilHero  { heroName :: String }
+          deriving (Show, Generic)
+
+instance ContextGenerator Hero
+
 main :: IO ()
 main = do
     template <- readFile "example.mustache"
@@ -39,6 +44,7 @@ main = do
                    [Name "me", Name "myself", Name "I"]
                    (SubContext (Tickets 2 "Gojira")))
               <++> (mkContext "friends" (ContextList []))
+              <++> (SuperHero "Dr. Manhattan")
               <++> defaultContext
     case em of
          Left e -> print e

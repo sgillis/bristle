@@ -15,4 +15,4 @@ Todo
  - [ ] List item by index
  - [ ] Custom queries and field renaming
  - [ ] Partials
- - [ ] Constructor names as keys
+ - [x] Constructor names as keys
