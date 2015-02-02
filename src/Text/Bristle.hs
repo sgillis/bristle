@@ -57,10 +57,10 @@ parseMustacheNode =
             invSection = prefixSection '^' >>= \(name, mustache) ->
               return $ MustacheSectionInv name mustache
             comment = mustache (char '!' >> key) >> return MustacheComment
-            noEscapeVar = MustacheVar False <$>
+            noEscapeVar = MustacheVar True <$>
               (mustache $ between (char '{') (char '}') key)
-            ampVar = MustacheVar False <$> (mustache $ string "& " >> key)
-            var = MustacheVar True <$> (mustache key)
+            ampVar = MustacheVar True <$> (mustache $ string "& " >> key)
+            var = MustacheVar False <$> (mustache key)
             text = MustacheText <$>
               (many1Till anyChar (try eof <|> startToken) >>= return . pack)
 

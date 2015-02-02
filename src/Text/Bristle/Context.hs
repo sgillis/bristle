@@ -1,6 +1,8 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Text.Bristle.Context where
 
-import Prelude hiding (lookup, concat)
+import Prelude hiding (lookup, concat, concatMap)
 import Data.Text
 import Control.Monad
 import System.Environment
@@ -23,6 +25,17 @@ defaultContext = \_ -> Nothing
 mkContext :: Text -> ContextNode -> Context
 mkContext s n = \s' -> if s' == s then Just n else Nothing
 
+htmlEscape :: Text -> Text
+htmlEscape = concatMap proc
+  where
+    proc '&'  = "&amp;"
+    proc '\\' = "&#92;"
+    proc '"'  = "&quot;"
+    proc '\'' = "&#39;"
+    proc '<'  = "&lt;"
+    proc '>'  = "&gt;"
+    proc h    = singleton h
+
 {-| Evaluate |-}
 evaluateTemplate :: ContextGenerator a => a -> Mustache -> IO Text
 evaluateTemplate c mu = do
@@ -31,10 +44,11 @@ evaluateTemplate c mu = do
 evaluateNode :: ContextGenerator a => a -> MustacheNode -> IO Text
 evaluateNode c (MustacheText s) = return s
 
-evaluateNode c (MustacheVar escape s) =
-    return $ case clookup c s of
-                  Just (ContextText s) -> s
-                  _                    -> empty
+evaluateNode c (MustacheVar escape s) = do
+    let value = case clookup c s of
+                     Just (ContextText s) -> s
+                     _                    -> empty
+    if escape then return (htmlEscape value) else return value
 
 evaluateNode c MustacheComment = return empty
 

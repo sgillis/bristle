@@ -47,6 +47,7 @@ main = do
                    (SubContext (Tickets 2 "Gojira")))
               <++> (mkContext "friends" (ContextList []))
               <++> (SuperHero "Dr. Manhattan")
+              <++> (mkContext "html" (ContextText "<b>html</b>"))
               <++> defaultContext
     case em of
          Left e -> print e
