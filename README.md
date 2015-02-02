@@ -11,7 +11,7 @@ Todo
  - [ ] Testing
  - [x] List of context generators as a context generator
  - [x] Combine context generators
- - [ ] Escaping
+ - [x] Escaping
  - [ ] List item by index
  - [ ] Custom queries and field renaming
  - [x] Partials
