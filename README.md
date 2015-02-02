@@ -16,3 +16,4 @@ Todo
  - [ ] Custom queries and field renaming
  - [x] Partials
  - [x] Constructor names as keys
+ - [ ] Monadic functions
