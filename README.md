@@ -17,3 +17,4 @@ Todo
  - [x] Partials
  - [x] Constructor names as keys
  - [ ] Monadic functions
+ - [x] Move to Text instead of String

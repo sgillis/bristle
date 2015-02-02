@@ -1,6 +1,7 @@
 module Text.Bristle.Context where
 
-import Prelude hiding (lookup)
+import Prelude hiding (lookup, concat)
+import Data.Text
 import Control.Monad
 import System.Environment
 import Text.Parsec
@@ -19,18 +20,15 @@ combineContext c c' = \s -> case clookup c s of
 defaultContext :: Context
 defaultContext = \_ -> Nothing
 
-mkContext :: String -> ContextNode -> Context
+mkContext :: Text -> ContextNode -> Context
 mkContext s n = \s' -> if s' == s then Just n else Nothing
 
 {-| Evaluate |-}
-empty :: String
-empty = ""
-
-evaluateTemplate :: ContextGenerator a => a -> Mustache -> IO String
+evaluateTemplate :: ContextGenerator a => a -> Mustache -> IO Text
 evaluateTemplate c mu = do
     mapM (evaluateNode c) mu >>= return . concat
 
-evaluateNode :: ContextGenerator a => a -> MustacheNode -> IO String
+evaluateNode :: ContextGenerator a => a -> MustacheNode -> IO Text
 evaluateNode c (MustacheText s) = return s
 
 evaluateNode c (MustacheVar escape s) =
@@ -57,8 +55,8 @@ evaluateNode c (MustacheSectionInv s m) =
          _                      -> return empty
 
 evaluateNode c (MustachePartial s) = do
-    partialMustache <- readFile (s ++ ".mustache")
-    let em = parse parseMustache "" partialMustache
+    partialMustache <- readFile (unpack s ++ ".mustache")
+    let em = parse parseMustache "" (pack partialMustache)
     case em of
-         Left e -> return $ show e
+         Left e -> return $ pack $ show e
          Right m -> evaluateTemplate c m

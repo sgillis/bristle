@@ -11,30 +11,30 @@
 
 module Text.Bristle.Types where
 
-import Prelude hiding (lookup)
+import Prelude
 import GHC.Generics
-import Data.Typeable
+import Data.Text hiding (map)
 
 type Mustache = [MustacheNode]
 type Escape = Bool
 
-data MustacheNode = MustacheText String
-                  | MustacheVar Escape String
-                  | MustacheSection String Mustache
-                  | MustacheSectionInv String Mustache
-                  | MustachePartial String
+data MustacheNode = MustacheText Text
+                  | MustacheVar Escape Text
+                  | MustacheSection Text Mustache
+                  | MustacheSectionInv Text Mustache
+                  | MustachePartial Text
                   | MustacheComment
                   deriving Show
 
-data ContextNode = ContextText String
-                 | ContextLambda (String -> String)
+data ContextNode = ContextText Text
+                 | ContextLambda (Text -> Text)
                  | ContextBool Bool
                  | ContextList [Context]
                  | ContextSub Context
 
 newtype SubContext c = SubContext { getContext :: c }
 
-type Context = (String -> Maybe ContextNode)
+type Context = (Text -> Maybe ContextNode)
 
 instance ContextGenerator Context where
     clookup a s = a s
@@ -47,18 +47,18 @@ instance (ContextGenerator a) => ContextGenerator [a] where
 
 {-| ContextGenerator |-}
 class ContextGenerator a where
-    clookup :: a -> String -> Maybe ContextNode
+    clookup :: a -> Text -> Maybe ContextNode
     default clookup :: (Generic a, GContextGenerator (Rep a))
-                   => a -> String -> Maybe ContextNode
+                   => a -> Text -> Maybe ContextNode
     clookup = glookup . from
 
 {-| Generic ContextGenerator |-}
 class GContextGenerator f where
-    glookup :: f a -> String -> Maybe ContextNode
+    glookup :: f a -> Text -> Maybe ContextNode
 
 instance (GContext f, Selector c) => GContextGenerator (S1 c f) where
-    glookup m@(M1 x) s | selName m == s = Just $ gcontext x
-                       | otherwise      = Nothing
+    glookup m@(M1 x) s | pack (selName m) == s = Just $ gcontext x
+                       | otherwise             = Nothing
 
 instance (GContextGenerator f) => GContextGenerator (D1 c f) where
     glookup (M1 x) = glookup x
@@ -92,16 +92,19 @@ class GContext f where
     gcontext :: f a -> ContextNode
 
 instance GContext (K1 i String) where
+    gcontext (K1 x) = ContextText $ pack x
+
+instance GContext (K1 i Text) where
     gcontext (K1 x) = ContextText x
 
-instance GContext (K1 i (String -> String)) where
+instance GContext (K1 i (Text -> Text)) where
     gcontext (K1 x) = ContextLambda x
 
 instance GContext (K1 i Bool) where
     gcontext (K1 x) = ContextBool x
 
 instance (Show c) => GContext (K1 i c) where
-    gcontext (K1 x) = ContextText $ show x
+    gcontext (K1 x) = ContextText $ pack $ show x
 
 instance (ContextGenerator c) => GContext (K1 i [c]) where
     gcontext (K1 xs) = ContextList $ map clookup xs
@@ -111,7 +114,7 @@ instance (ContextGenerator c) => GContext (K1 i (SubContext c)) where
 
 {-| GName |-}
 class GName f where
-    gname :: f a -> String
+    gname :: f a -> Text
 
 instance (Constructor c) => GName (M1 C c f) where
-    gname = conName
+    gname = pack . conName

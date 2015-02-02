@@ -30,8 +30,9 @@ module Text.Bristle where
 --   - Not supported
 
 import Prelude hiding (lookup)
+import Data.Text
 import Text.Parsec
-import Text.Parsec.String (Parser)
+import Text.Parsec.Text (Parser)
 import Control.Applicative ((<$>), (<*>))
 import Text.Bristle.Types
 
@@ -60,7 +61,8 @@ parseMustacheNode =
               (mustache $ between (char '{') (char '}') key)
             ampVar = MustacheVar False <$> (mustache $ string "& " >> key)
             var = MustacheVar True <$> (mustache key)
-            text = MustacheText <$> (many1Till anyChar (try eof <|> startToken))
+            text = MustacheText <$>
+              (many1Till anyChar (try eof <|> startToken) >>= return . pack)
 
 startToken :: Parser ()
 startToken = lookAhead $ try $ string "{{" >> return ()
@@ -68,22 +70,22 @@ startToken = lookAhead $ try $ string "{{" >> return ()
 endToken :: Parser ()
 endToken = lookAhead $ try $ string "}}" >>  return ()
 
-key :: Parser String
-key = manyTill anyChar (lookAhead $ try (string "}}"))
+key :: Parser Text
+key = manyTill anyChar (lookAhead $ try (string "}}")) >>= return . pack
 
 mustache :: Parser a -> Parser a
 mustache f = between (string "{{") (string "}}") f
 
-prefixSection :: Char -> Parser (String, Mustache)
+prefixSection :: Char -> Parser (Text, Mustache)
 prefixSection prefix = do
-    sectionName <- mustache $ char prefix >> key
+    sectionName <- mustache $ char prefix >> key >>= return . unpack
     n           <- optionMaybe newline
     mustache    <- manyTill parseMustacheNode $ lookAhead $ try $ sectionEnd sectionName
     _           <- sectionEnd sectionName
     case n of
          Just _ -> newline >> return ()
          Nothing   -> return ()
-    return (sectionName, mustache)
+    return (pack sectionName, mustache)
       where sectionEnd name = mustache $ char '/' >> string name
 
 many1Till :: Parser a -> Parser b -> Parser [a]

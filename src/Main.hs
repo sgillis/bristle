@@ -1,27 +1,29 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 
-import Data.Char
+import Prelude hiding (map)
 import GHC.Generics
+import Data.Text
 import Text.Parsec (parse)
 import Text.Bristle
 import Text.Bristle.Context
 import Text.Bristle.Types
 
 data Name = Name
-    { name :: String } deriving Generic
+    { name :: Text } deriving Generic
 
 instance ContextGenerator Name
 
 data Tickets = Tickets
     { amount  :: Int
-    , concert :: String
+    , concert :: Text
     } deriving Generic
 
 instance ContextGenerator Tickets
 
 data Rec = Rec
-    { world   :: String
-    , shout   :: String -> String
+    { world   :: Text
+    , shout   :: Text -> Text
     , n       :: Int
     , blabber :: Bool
     , names   :: [Name]
@@ -39,8 +41,8 @@ instance ContextGenerator Hero
 main :: IO ()
 main = do
     template <- readFile "example.mustache"
-    let em  = parse parseMustache "" template
-        ctx = (Rec "Europe" (map toUpper) 1 False
+    let em  = parse parseMustache "" (pack template)
+        ctx = (Rec "Europe" toUpper 1 False
                    [Name "me", Name "myself", Name "I"]
                    (SubContext (Tickets 2 "Gojira")))
               <++> (mkContext "friends" (ContextList []))
@@ -48,4 +50,4 @@ main = do
               <++> defaultContext
     case em of
          Left e -> print e
-         Right m -> evaluateTemplate ctx m >>= putStr
+         Right m -> evaluateTemplate ctx m >>= putStr . unpack
