@@ -3,7 +3,7 @@
 module Text.Bristle.Context where
 
 import Prelude hiding (lookup, concat, concatMap)
-import Data.Text
+import Data.Text hiding (map)
 import Control.Monad
 import System.Environment
 import Text.Parsec
@@ -36,6 +36,9 @@ htmlEscape = concatMap proc
     proc '>'  = "&gt;"
     proc h    = singleton h
 
+textToContext :: Text -> Context
+textToContext t = mkContext "." $ ContextText t
+
 {-| Evaluate |-}
 evaluateTemplate :: ContextGenerator a => a -> Mustache -> IO Text
 evaluateTemplate c mu = do
@@ -54,13 +57,17 @@ evaluateNode c MustacheComment = return empty
 
 evaluateNode c (MustacheSection s m) =
     case clookup c s of
-         Just (ContextLambda f) -> evaluateTemplate c m >>= return . f
-         Just (ContextBool b)   -> if b then evaluateTemplate c m else return empty
-         Just (ContextList [])  -> return empty
-         Just (ContextList xs)  -> mapM (flip evaluateTemplate m) xs >>=
-                                   return . concat
-         Just (ContextSub sc)   -> evaluateTemplate sc m
-         _                      -> evaluateTemplate c m
+         Just (ContextLambda f)       -> evaluateTemplate c m >>= return . f
+         Just (ContextBool b)         ->
+           if b then evaluateTemplate c m else return empty
+         Just (ContextList [])        -> return empty
+         Just (ContextList xs)        ->
+           mapM (flip evaluateTemplate m) xs >>= return . concat
+         Just (ContextLiteralList xs) ->
+           mapM (flip evaluateTemplate m) (map textToContext xs) >>=
+               return . concat
+         Just (ContextSub sc)         -> evaluateTemplate sc m
+         _                            -> evaluateTemplate c m
 
 evaluateNode c (MustacheSectionInv s m) =
     case clookup c s of

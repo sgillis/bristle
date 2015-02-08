@@ -48,6 +48,7 @@ main = do
               <++> (mkContext "friends" (ContextList []))
               <++> (SuperHero "Dr. Manhattan")
               <++> (mkContext "html" (ContextText "<b>html</b>"))
+              <++> (mkContext "trees" (ContextLiteralList ["Pine", "Oak"]))
               <++> defaultContext
     case em of
          Left e -> print e

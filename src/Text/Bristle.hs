@@ -51,7 +51,7 @@ parseMustacheNode =
     <|> try var
     <|> try text
       where partial = MustachePartial <$>
-                (mustache $ string "> " >> key) >>= stripNewline
+              (mustache $ string "> " >> key) >>= stripNewline
             section = prefixSection '#' >>= \(name, mustache) ->
               return $ MustacheSection name mustache
             invSection = prefixSection '^' >>= \(name, mustache) ->

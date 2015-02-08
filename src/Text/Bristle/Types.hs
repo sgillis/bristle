@@ -30,6 +30,7 @@ data ContextNode = ContextText Text
                  | ContextLambda (Text -> Text)
                  | ContextBool Bool
                  | ContextList [Context]
+                 | ContextLiteralList [Text]
                  | ContextSub Context
 
 newtype SubContext c = SubContext { getContext :: c }
@@ -102,6 +103,9 @@ instance GContext (K1 i (Text -> Text)) where
 
 instance GContext (K1 i Bool) where
     gcontext (K1 x) = ContextBool x
+
+instance GContext (K1 i [Text]) where
+    gcontext (K1 xs) = ContextLiteralList xs
 
 instance (Show c) => GContext (K1 i c) where
     gcontext (K1 x) = ContextText $ pack $ show x

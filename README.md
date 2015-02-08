@@ -18,3 +18,5 @@ Todo
  - [x] Constructor names as keys
  - [ ] Monadic functions
  - [x] Move to Text instead of String
+ - [ ] Access subcontext with dot (e.g {{person.firstname}})
+ - [x] Enable list of Text with {{.}}
