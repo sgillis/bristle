@@ -10,19 +10,19 @@ import Text.Parsec
 import Text.Bristle.Types
 import Text.Bristle
 
-combineContext :: (ContextGenerator a, ContextGenerator b)
-               => a -> b -> Context
+combineContext :: (ContextGenerator m a, ContextGenerator m b)
+               => a -> b -> Context m
 combineContext c c' = \s -> case clookup c s of
                                  Nothing -> clookup c' s
                                  ma      -> ma
 
-(<++>) :: (ContextGenerator a, ContextGenerator b) => a -> b -> Context
+(<++>) :: (ContextGenerator m a, ContextGenerator m b) => a -> b -> Context m
 (<++>) = combineContext
 
-defaultContext :: Context
-defaultContext = \_ -> Nothing
+defaultContext :: Context m
+defaultContext = \_ -> return Nothing
 
-mkContext :: Text -> ContextNode -> Context
+mkContext :: Text -> ContextNode m -> Context m
 mkContext s n = \s' -> if s' == s then Just n else Nothing
 
 htmlEscape :: Text -> Text
@@ -36,15 +36,15 @@ htmlEscape = concatMap proc
     proc '>'  = "&gt;"
     proc h    = singleton h
 
-textToContext :: Text -> Context
+textToContext :: Text -> Context m
 textToContext t = mkContext "." $ ContextText t
 
 {-| Evaluate |-}
-evaluateTemplate :: ContextGenerator a => a -> Mustache -> IO Text
+evaluateTemplate :: ContextGenerator m a => a -> Mustache -> IO Text
 evaluateTemplate c mu = do
     mapM (evaluateNode c) mu >>= return . concat
 
-evaluateNode :: ContextGenerator a => a -> MustacheNode -> IO Text
+evaluateNode :: ContextGenerator m a => a -> MustacheNode -> IO Text
 evaluateNode c (MustacheText s) = return s
 
 evaluateNode c (MustacheVar escape s) = do
