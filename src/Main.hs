@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 import Prelude hiding (map)
 import GHC.Generics
@@ -8,18 +9,19 @@ import Text.Parsec (parse)
 import Text.Bristle
 import Text.Bristle.Context
 import Text.Bristle.Types
+import Control.Monad.IO.Class
 
 data Name = Name
     { name :: Text } deriving Generic
 
-instance ContextGenerator Name
+instance ContextGenerator IO Name
 
 data Tickets = Tickets
     { amount  :: Int
     , concert :: Text
     } deriving Generic
 
-instance ContextGenerator Tickets
+instance ContextGenerator IO Tickets
 
 data Rec = Rec
     { world   :: Text
@@ -30,13 +32,13 @@ data Rec = Rec
     , tickets :: SubContext Tickets
     } deriving Generic
 
-instance ContextGenerator Rec
+instance ContextGenerator IO Rec
 
 data Hero = SuperHero { heroName :: String }
           | EvilHero  { heroName :: String }
           deriving (Show, Generic)
 
-instance ContextGenerator Hero
+instance ContextGenerator IO Hero
 
 main :: IO ()
 main = do
