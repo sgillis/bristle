@@ -9,6 +9,7 @@ import Text.Parsec (parse)
 import Text.Bristle
 import Text.Bristle.Context
 import Text.Bristle.Types
+import Text.Bristle.ContextGenerators
 import Control.Monad.IO.Class
 
 data Name = Name
@@ -54,4 +55,7 @@ main = do
               <++> defaultContext
     case em of
          Left e -> print e
-         Right m -> evaluateTemplate ctx m >>= putStr . unpack
+         Right m -> do
+            evaluateTemplate fromEnv m >>= putStr . unpack
+            evaluateTemplate ctx m >>= putStr . unpack
+            evaluateTemplate fromHttp m >>= putStr . unpack
