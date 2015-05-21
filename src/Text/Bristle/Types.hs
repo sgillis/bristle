@@ -9,12 +9,14 @@
 {-# LANGUAGE OverlappingInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 module Text.Bristle.Types where
 
 import Prelude
 import GHC.Generics
 import Data.Text hiding (map)
+import Control.Monad.IO.Class (MonadIO)
 
 type Mustache = [MustacheNode]
 type Escape = Bool
@@ -38,10 +40,10 @@ newtype SubContext c = SubContext { getContext :: c }
 
 type Context m = (Text -> m (Maybe (ContextNode m)))
 
-instance (Monad m) => ContextGenerator m (Context m) where
+instance (MonadIO m) => ContextGenerator m (Context m) where
     clookup a s = a s
 
-instance (Monad m, ContextGenerator m a) => ContextGenerator m [a] where
+instance (MonadIO m, ContextGenerator m a) => ContextGenerator m [a] where
     clookup [] s = return Nothing
     clookup (a:as) s = do
         mctx <- clookup a s
@@ -50,7 +52,7 @@ instance (Monad m, ContextGenerator m a) => ContextGenerator m [a] where
              ma      -> return ma
 
 {-| ContextGenerator |-}
-class ContextGenerator m a where
+class ContextGenerator m a | a -> m where
     clookup :: a -> Text -> m (Maybe (ContextNode m))
     default clookup :: (Generic a, GContextGenerator m (Rep a))
                    => a -> Text -> m (Maybe (ContextNode m))
@@ -60,7 +62,7 @@ class ContextGenerator m a where
 class GContextGenerator m f where
     glookup :: f a -> Text -> m (Maybe (ContextNode m))
 
-instance (GContext m f, Selector c, Monad m)
+instance (GContext m f, Selector c, MonadIO m)
          => GContextGenerator m (S1 c f) where
     glookup m@(M1 x) s
         | pack (selName m) == s = do contextnode <- gcontext x
@@ -73,13 +75,13 @@ instance (GContextGenerator m f) => GContextGenerator m (D1 c f) where
 instance (GContextGenerator m f) => GContextGenerator m (C1 c f) where
     glookup (M1 x) = glookup x
 
-instance (ContextGenerator m a, Monad m) => GContextGenerator m (K1 i a) where
+instance (ContextGenerator m a, MonadIO m) => GContextGenerator m (K1 i a) where
     glookup (K1 x) s = return Nothing
 
-instance Monad m => GContextGenerator m U1 where
+instance MonadIO m => GContextGenerator m U1 where
     glookup _ _ = return Nothing
 
-instance (GContextGenerator m f, GContextGenerator m g, Monad m)
+instance (GContextGenerator m f, GContextGenerator m g, MonadIO m)
          => GContextGenerator m (f :*: g) where
     glookup (x :*: y) s = do
         mcontextnode <- glookup x s
@@ -88,7 +90,7 @@ instance (GContextGenerator m f, GContextGenerator m g, Monad m)
              ms -> return $ ms
 
 instance (GName f, GName g, GContextGenerator m f, GContextGenerator m g
-         , Monad m) => GContextGenerator m (f :+: g) where
+         , MonadIO m) => GContextGenerator m (f :+: g) where
     glookup (L1 x) s = case gname x == s of
                               True -> return $ Just $ ContextSub $ glookup x
                               False -> return $ Nothing
@@ -100,28 +102,28 @@ instance (GName f, GName g, GContextGenerator m f, GContextGenerator m g
 class GContext m f where
     gcontext :: f a -> m (ContextNode m)
 
-instance Monad m => GContext m (K1 i String) where
+instance MonadIO m => GContext m (K1 i String) where
     gcontext (K1 x) = return $ ContextText $ pack x
 
-instance Monad m => GContext m (K1 i Text) where
+instance MonadIO m => GContext m (K1 i Text) where
     gcontext (K1 x) = return $ ContextText x
 
-instance Monad m => GContext m (K1 i (Text -> Text)) where
+instance MonadIO m => GContext m (K1 i (Text -> Text)) where
     gcontext (K1 x) = return $ ContextLambda x
 
-instance Monad m => GContext m (K1 i Bool) where
+instance MonadIO m => GContext m (K1 i Bool) where
     gcontext (K1 x) = return $ ContextBool x
 
-instance Monad m => GContext m (K1 i [Text]) where
+instance MonadIO m => GContext m (K1 i [Text]) where
     gcontext (K1 xs) = return $ ContextLiteralList xs
 
-instance (Monad m, Show c) => GContext m (K1 i c) where
+instance (MonadIO m, Show c) => GContext m (K1 i c) where
     gcontext (K1 x) = return $ ContextText $ pack $ show x
 
-instance (ContextGenerator m c, Monad m) => GContext m (K1 i [c]) where
+instance (ContextGenerator m c, MonadIO m) => GContext m (K1 i [c]) where
     gcontext (K1 xs) = return $ ContextList $ map clookup xs
 
-instance (ContextGenerator m c, Monad m)
+instance (ContextGenerator m c, MonadIO m)
          => GContext m (K1 i (SubContext c)) where
     gcontext (K1 x) = do
         let context = clookup (getContext x)
