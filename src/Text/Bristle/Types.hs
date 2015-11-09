@@ -27,7 +27,7 @@ data MustacheNode = MustacheText Text
                   | MustacheSectionInv Text Mustache
                   | MustachePartial Text
                   | MustacheComment
-                  deriving Show
+                  deriving (Show, Eq)
 
 data ContextNode m = ContextText Text
                    | ContextLambda (Text -> Text)
